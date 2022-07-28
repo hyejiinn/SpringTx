@@ -106,5 +106,24 @@ class MemberServiceTest {
         assertTrue(logRepository.find(username).isPresent());
     }
 
+    /**
+     * 트랜잭션 전파 활용 5 - 전파 롤백
+     * MemberService : @Transactional On
+     * MemberRepository : @Transactional On
+     * LogRepository : @Transactional On Exception
+     */
+    @Test
+    void outerTxOn_fail() {
+        // given
+        String username = "로그예외_outerTxOn_fail";
+
+        // when
+        assertThatThrownBy(() -> memberService.joinV1(username)).isInstanceOf(RuntimeException.class);
+
+        // then : 모든 데이터가 롤백된다
+        assertTrue(memberRepository.find(username).isEmpty());
+        assertTrue(logRepository.find(username).isEmpty());
+    }
+
 
 }
