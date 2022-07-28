@@ -6,8 +6,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 
+import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
 
+/**
+ * 트랜잭션 전파의 기본 값은 REQUIRED
+ * : 기존 트랜잭션이 없으면 새로운 트랜잭션을 만들고, 기존 트랜잭션이 있으면 참여한다.
+ */
 @Slf4j
 @SpringBootTest
 class MemberServiceTest {
@@ -20,7 +25,7 @@ class MemberServiceTest {
     MemberService memberService;
 
     /**
-     * 트랜잭션 전파 활용 1
+     * 트랜잭션 전파 활용 1 : 서비스 계층에 트랜잭션이 없을 때 (커밋)
      * MemberService : @Transactional Off
      * MemberRepository : @Transactional On
      * LogRepository : @Transactional On
@@ -37,4 +42,28 @@ class MemberServiceTest {
         assertTrue(memberRepository.find(username).isPresent());
         assertTrue(logRepository.find(username).isPresent());
     }
+
+    /**
+     * 트랜잭션 전파 활용 2 : 서비스 계층에 트랜잭션 없을때 (롤백)
+     * MemberService : @Transactional Off
+     * MemberRepository : @Transactional On
+     * LogRepository : @Transactional On Exception
+     * 회원 리포지토리는 정상 동작하지만, 로그 리포지토리에서 예외 발생
+     */
+    @Test
+    void outerTxOff_fail() {
+        // given
+        String username = "로그예외_outerTxOff_fail";
+
+        // when
+        // logRepository는 해당 예외를 밖으로 던지고, 이 경우 트랜잭션 AOP가 예외를 받게 된다.
+        // 런타임 예외가 발생해서 트랜잭션 AOP는 트랜잭션 매니저에 롤백 호출
+        assertThatThrownBy(() -> memberService.joinV1(username)).isInstanceOf(RuntimeException.class);
+
+        // then : 완전히 롤백되지 않고, member 데이터가 남아서 저장된다.
+        assertTrue(memberRepository.find(username).isPresent());
+        assertTrue(logRepository.find(username).isEmpty());
+    }
+
+
 }
