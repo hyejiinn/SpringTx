@@ -3,6 +3,7 @@ package com.example.springtransaction.propagation;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 @Slf4j
 @Service
@@ -16,6 +17,7 @@ public class MemberService {
      * 회원과 DB로그를 함께 남기는 비지니스 로직이다.
      * @param username
      */
+    @Transactional
     public void joinV1(String username) {
         Member member = new Member(username);
         Log logMessage = new Log(username);

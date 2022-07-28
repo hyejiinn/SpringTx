@@ -65,5 +65,25 @@ class MemberServiceTest {
         assertTrue(logRepository.find(username).isEmpty());
     }
 
+    /**
+     * 트랜잭션 전파 활용 3 : 단일 트랜잭션
+     * 회원 리포지토리와 로그 리포지토리를 하나의 트랜잭션으로 묶는 방법은 이 둘을 호출하는 회원 서비스에 트랜잭션을 사용하는 것이다.
+     *
+     * MemberService만 트랜잭션을 처리하기 때문에 논리 트랜잭션, 물리 트랜잭션, 외부 트랜잭션, 내부 트랜잭션, 트랜잭션 전파, rollbackOnly 등을 고려할 필요가 없다.
+     */
+    @Test
+    void singleTx() {
+        // given
+        String username = "singleTx";
+
+        // when
+        memberService.joinV1(username);
+
+        // then : 모든 데이터가 정상 저장된다.
+        assertTrue(memberRepository.find(username).isPresent());
+        assertTrue(logRepository.find(username).isPresent());
+
+    }
+
 
 }
