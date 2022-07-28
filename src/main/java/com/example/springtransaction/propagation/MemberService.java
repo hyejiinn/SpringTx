@@ -35,6 +35,7 @@ public class MemberService {
      * DB로그 저장시 예외가 발생하면 예외를 복구한다.
      * @param username
      */
+    @Transactional
     public void joinV2(String username) {
         Member member = new Member(username);
         Log logMessage = new Log(username);

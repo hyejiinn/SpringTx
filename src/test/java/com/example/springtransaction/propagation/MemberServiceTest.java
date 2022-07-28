@@ -5,6 +5,7 @@ import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.transaction.UnexpectedRollbackException;
 
 import static org.assertj.core.api.Assertions.*;
 import static org.junit.jupiter.api.Assertions.*;
@@ -12,6 +13,9 @@ import static org.junit.jupiter.api.Assertions.*;
 /**
  * 트랜잭션 전파의 기본 값은 REQUIRED
  * : 기존 트랜잭션이 없으면 새로운 트랜잭션을 만들고, 기존 트랜잭션이 있으면 참여한다.
+ *
+ * 논리 트랜잭션 중 하나라도 롤백되면 전체 트랜잭션은 롤백된다.
+ * 내부 트랜잭션이 롤백되었는데 외부 트랜잭션이 커밋되면 UnexpectedRollbackException 예외가 발생한다.
  */
 @Slf4j
 @SpringBootTest
@@ -121,6 +125,30 @@ class MemberServiceTest {
         assertThatThrownBy(() -> memberService.joinV1(username)).isInstanceOf(RuntimeException.class);
 
         // then : 모든 데이터가 롤백된다
+        assertTrue(memberRepository.find(username).isEmpty());
+        assertTrue(logRepository.find(username).isEmpty());
+    }
+
+    /**
+     * 트랜잭션 전파 활용 6 - 복구 REQUIRED
+     * MemberService : @Transactional On
+     * MemberRepository : @Transactional On
+     * LogRepository : @Transactional On Exception
+     *
+     * LogRepository에서 예외가 발생하면 그것을 MemberService에서 잡아서 처리하고,
+     * MemberService가 정상 흐름으로 바꿀 수있기 때문에 MemberService에서 트랜잭션 AOP에서 커밋을 수행할수 있을 것 같지만 롤백한다!!!!
+     * -> 내부 트랜잭션에서 rollbackOnly 설정을 하기 때문에 결과적으로 정상 흐름 처리를 해서 외부 트랜잭션에서 커밋을 호출해도 물리 트랜잭션은 롤백된다.
+     * 그리고 UnexpectedRollbackException 이 던져진다.
+     */
+    @Test
+    void recoverException_fail() {
+        // given
+        String username = "로그예외_recoverException_fail";
+
+        // when
+        assertThatThrownBy(() -> memberService.joinV2(username)).isInstanceOf(UnexpectedRollbackException.class);
+
+        // then
         assertTrue(memberRepository.find(username).isEmpty());
         assertTrue(logRepository.find(username).isEmpty());
     }
