@@ -109,4 +109,30 @@ public class BasicTxTest {
         txManager.commit(outer); // Initiating transaction commit
     }
 
+    /**
+     * 스프링 트랜잭션 전파 - 외부 롤백
+     * 내부 트랜잭션은 커밋되었는데 외부 트랜잭션이 롤백되는 상황
+     *
+     * 외부 트랜잭션에서 시작한 물리 트랜잭션의 범위가 내부 트랜잭션까지 사용된다.
+     * 이후 외부 트랜잭션이 롤백되면서 전체 내용이 롤백된다.
+     */
+    @Test
+    void outer_rollback() {
+        log.info("외부 트랜잭션 시작");
+        TransactionStatus outer = txManager.getTransaction(new DefaultTransactionAttribute());
+        log.info("outer.isNewTransaction={}", outer.isNewTransaction()); // true
+
+        log.info("내부 트랜잭션 시작");
+        TransactionStatus inner = txManager.getTransaction(new DefaultTransactionAttribute());
+        log.info("inner.isNewTransaction={}", inner.isNewTransaction()); // false
+        log.info("내부 트랜잭션 커밋");
+        txManager.commit(inner);
+
+        // 외부 트랜잭션은 신규 트랜잭션이기 때문에 DB 커넥션에 실제 롤백을 호출한다.
+        log.info("외부 트랜잭션 롤백");
+        txManager.rollback(outer);
+    }
+
+
+
 }
