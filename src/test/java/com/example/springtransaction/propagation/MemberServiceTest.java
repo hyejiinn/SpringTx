@@ -153,5 +153,24 @@ class MemberServiceTest {
         assertTrue(logRepository.find(username).isEmpty());
     }
 
+    /**
+     * 트랜잭션 전파 활용 7 - 복구 REQUIRES_NEW
+     * 회원가입을 시도한 로그를 남기는데 실패하더라도 회원 가입은 유지되어야 한다.(logRepository가 롤백되더라도 MemberRepository는 커밋되어야 한다.)
+     *
+     * REQUIRES_NEW 는 항상 새로운 트랜잭션을 만든다.
+     * 따라서 해당 트랜잭션 안에서는 DB 커넥션도 별도로 사용하게 된다.
+     */
+    @Test
+    void recoverException_success() {
+        // given
+        String username = "로그예외_recoverException_success";
+
+        // when
+        memberService.joinV2(username);
+
+        // then : member 저장, log 롤백
+        assertTrue(memberRepository.find(username).isPresent());
+        assertTrue(logRepository.find(username).isEmpty());
+    }
 
 }
